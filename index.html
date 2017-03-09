@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>Appointment Calendar</title>
 <meta charset='utf-8' />
 <link href='css/fullcalendar.css' rel='stylesheet' />
 <link href='css/bootstrap.min.css' rel='stylesheet' />
@@ -12,7 +13,7 @@
 
 <script src='js/moment.min.js'></script>
 <script src='js/jquery.min.js'></script>
-<script src='js/fullcalendar.min.js'></script>
+<script src='js/fullcalendar.js'></script>
 <script src='js/scheduler.min.js'></script>
 <script src='js/bootstrap.min.js'></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -28,8 +29,14 @@
 <script src="js/jquery.timepicker.min.js"></script>
 
 
-<script type="text/javascript"> 
-  function  moveToScreenTwo(test) {
+<script type="text/javascript">
+
+    $(window).on('load',function() {    
+      $(".se-pre-con").delay(3000).fadeOut("slow");
+    });
+
+
+    function  moveToScreenTwo(test) {
         Android.moveToNextScreen(test);
     }     
     
@@ -42,7 +49,10 @@
             var start_test;
             var start_time;
             var end_test;
-            var end_time;        
+            var end_time;   
+            var duration = 0; 
+            var eventDuration = 15;   
+            var is_button = 0; 
 		        //var base_url = 'localhost:3000';
             var base_url = 'zalonstyle.in:8080';
             var days;
@@ -116,8 +126,8 @@
                                   function(isConfirm){
                                       if (isConfirm) {
                                           var date =  event.start.format("YYYY-MM-DD"); 
-                                          start_time = event.start.format("HH:mm a");   
-                                          end_time = event.end.format("HH:mm a");
+                                          start_time = event.start.format("hh:mm a");   
+                                          end_time = event.end.format("hh:mm a");
                                           start_test = event.start.format("YYYY-MM-DD HH:mm:ss");
                                           end_test = event.end.format("YYYY-MM-DD HH:mm:ss");
                                           $('#block_btn').hide();
@@ -239,7 +249,10 @@
                                 });     
                         });               
                 },
-       			select: function(start, end, allDay, event, resourceId){
+       			//select: function(start, end, allDay, event, resourceId){
+              dayClick: function(start, jsEvent, view, resourceId) {                    
+                    is_button = 0;
+                    $('#event_form')[0].reset();
                     current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss'); 
                     var check = start.format('YYYY-MM-DD HH:mm:ss');       
                     var index = days.indexOf(moment(check).day());
@@ -252,42 +265,65 @@
                         $('#block_btn button').text('Block');
                         block = 0;               
                         $('#service_info, #stylist_info, #cust_info, #notes_info').show();
-            			var date = 	start.format("YYYY-MM-DD");	
+            			      var date = 	start.format("DD-MM-YYYY");	
                         start_time = start.format("hh:mm A"); 	
-                        end_time = end.format("hh:mm A");
-        				start_test = start.format("YYYY-MM-DD HH:mm:ss");
-        				end_test = end.format("YYYY-MM-DD HH:mm:ss");
+                        //end_time = end.format("hh:mm A");
+                				start_test = start.format("YYYY-MM-DD HH:mm:ss");
+                				//end_test = end.format("YYYY-MM-DD HH:mm:ss");
                         staff_id = resourceId.id;                
                         $('#datepicker').val(date);
                         $('#start_time').val(start_time);
-                        $('#end_time').val(end_time);
+                        //$('#end_time').val(end_time);
                         $('#stylist').text(resourceId.title);
                         $('#addEventBtn').removeClass('hidden');
                         $('#updateEventBtn').addClass('hidden');
           			    $('#myModal').modal('show');
                     }                                
-          		},
-                eventDurationEditable:false,                      
+          		  },
+                // dayClick: function(date, jsEvent, view, resourceObj) {
+
+                //     alert('Date: ' + date.format('YYYY-MM-DD HH:mm:ss'));
+                //     alert('Resource ID: ' + resourceObj.id);
+
+                // },
+                eventDurationEditable:false,
+                eventStartEditable : false,                      
                 eventDrop: function( event, delta, revertFunc, jsEvent, ui, view ) {
-                    current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');                         
-                    var start = event.start.format("YYYY-MM-DD HH:mm:ss");
-                    var end = event.end.format("YYYY-MM-DD HH:mm:ss");
-                    if(start > current_time){                          
-                        $.ajax({
-                           url: 'http://'+base_url+'/calendar/updateEvent',
-                           data: 'access_token='+access_token+'&id='+ event.id+'&start='+ start +'&end='+ end +'&staff_id='+ event.resourceId ,
-                           type: "GET",
-                           success: function(json) {
-                               if(json.data == 'busy'){
-                                    revertFunc();
-                               }
-                           }
-                        });
-                    }else{
-                        revertFunc();    
-                    }
+                    // current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                    // var start = event.start.format("YYYY-MM-DD HH:mm:ss");
+                    // var end = event.end.format("YYYY-MM-DD HH:mm:ss");
+                    // if(start > current_time){                          
+                    //     $.ajax({
+                    //        url: 'http://'+base_url+'/calendar/updateEvent',
+                    //        data: 'access_token='+access_token+'&id='+ event.id+'&start='+ start +'&end='+ end +'&staff_id='+ event.resourceId ,
+                    //        type: "GET",
+                    //        success: function(json) {
+                    //            if(json.data == 'busy'){
+                    //                 revertFunc();
+                    //            }
+                    //        }
+                    //     });
+                    // }else{
+                    //     revertFunc();    
+                    // }
+                    revertFunc(); 
                 }        
     		});
+
+      function getDate(){
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth()+1; 
+        var yyyy = today.getFullYear();
+        if(dd<10){
+            dd='0'+dd;
+        } 
+        if(mm<10){
+            mm='0'+mm;
+        } 
+        var today = dd+'-'+mm+'-'+yyyy;
+        return today;
+      }
 
         window.setInterval(function(){
             $('#calendar').fullCalendar( 'refetchEvents' );    
@@ -297,11 +333,25 @@
         $('#myModal').on('hidden.bs.modal', function () {            
             $('#event_form')[0].reset();  
             $('#service_search').val('');
-            $('#segession_box').hide();            
+            $('#segession_box').hide(); 
+            $('#stylist').css({'display':'block'}); 
+            $('#selectStaff').css({'display':'none'});           
         });
 
-		$( "#datepicker" ).datepicker({ dateFormat: 'yy-mm-dd',minDate:0 });
-        $('#end_time').timepicker({ 'scrollDefault': 'now','timeFormat': 'h:i A' }); 
+		$("#datepicker" ).datepicker({ 
+            dateFormat: 'dd-mm-yy',
+            minDate:0,
+            onSelect: function(){              
+                start = moment($(this).val(),'DD-MM-YYYY');
+                today = moment(getDate(),'DD-MM-YYYY');
+                duration = moment.duration(start.diff(today)).asDays();
+            }
+        });
+
+
+
+
+        $('#end_time, #start_time').timepicker({ 'scrollDefault': 'now','timeFormat': 'h:i A' }); 
         $('#end_time').on('changeTime', function() {
             var end = $(this).val();
             end = moment(end, ["h:mm A"]).format("HH:mm:ss");
@@ -309,9 +359,18 @@
             end_test = end_test + ' '+ end;          
         });  
 
-        $('#addEventBtn').on('click', function(){
+        $('#addEventBtn').on('click', function(){ 
+            if(is_button == 0){
+                start_new = moment(start_test).add('days', duration).format('YYYY-MM-DD HH:mm:ss');
+                end_new = moment(end_test).add('days', duration).format('YYYY-MM-DD HH:mm:ss');  
+            }else{
+                start_new = start_test;
+                end_new = end_test;
+            }
+            
             var event_id = 0;
             var service     = $('#service_search').val();
+            var salon_service_id = $('#salon_service_id').val();
             var cust_mobile = $('#cust_mobile').val();
             var cust_name = $('#cust_name').val();
             var notes = $('#eventNotes').val();
@@ -323,17 +382,10 @@
             }else{            
                 $.ajax({
                     url: 'http://'+base_url+'/calendar/addEvent',
-                    data: 'access_token='+access_token+'&event_id='+event_id+'&service='+service+'&start='+ start_test +'&end='+ end_test +'&staff_id='+ staff_id +'&cust_mobile='+cust_mobile+'&cust_name='+cust_name+'&notes='+notes+'&block='+block+'&repeat='+repeat,
+                    data: 'access_token='+access_token+'&event_id='+event_id+'&service='+service+'&start='+ start_new +'&end='+ end_new +'&staff_id='+ staff_id +'&cust_mobile='+cust_mobile+'&cust_name='+cust_name+'&notes='+notes+'&block='+block+'&repeat='+repeat+'&salon_service_id='+salon_service_id,
                     type: 'GET',                         
                     success: function(json) { 
-                        if(json.data != 'exist'){
-                              // if(block == 1){
-                              //     eventData = {id:json.data[0].id,title: json.data[0].service,start: start_test,end: end_test,resourceId: json.data[0].staff_id,description:json.data[0].cust_name,editable:false,notes:json.data[0].notes,color:'#A1A2A3'};
-                              // }else{
-                              //     eventData = {id:json.data[0].id,title: service,start: start_test,end: end_test,resourceId: json.data[0].staff_id,description:json.data[0].cust_name,editable:true,notes:json.data[0].notes};    
-                              // }
-                              // $('#calendar').fullCalendar('renderEvent', eventData, true);                      
-                              // $('#calendar').fullCalendar('unselect');
+                        if(json.data != 'exist'){                              
                               $('#calendar').fullCalendar( 'refetchEvents' );    
                               $('#event_form')[0].reset();                                  
                               $('#myModal').modal('hide');  
@@ -357,7 +409,7 @@
                         $('#segession_box').show();
                         $('#segession_box ul').empty();                                  
                         $.each(data, function(key,val){                        
-                            $("#segession_box ul").append('<li><a class="service" data-id="'+val.category_id+'" data-name="'+val.category_name+'" data-duration="'+val.duration+'" href="javascript:void(0);">'+val.category_name+'</a></li>');
+                            $("#segession_box ul").append('<li><a class="service" data-id="'+val.salon_service_id+'" data-name="'+val.category_name+'" data-duration="'+val.duration+'" href="javascript:void(0);">'+val.category_name+'</a></li>');
                         });
                     }
                 });
@@ -390,24 +442,29 @@
         });
         $(document).on('click','.service', function(){
             var category_name = $(this).data('name');
-            var category_id = $(this).data('id');            
+            var salon_service_id = $(this).data('id');            
             var duration = $(this).data('duration'); 
             if(duration != 0){
+                eventDuration = duration;
                 end_test = moment(start_test).add(duration,'minutes');
                 end_test = end_test.format("YYYY-MM-DD HH:mm:ss");
 
-                end_time = moment(end_test).format("HH:mm a");
-                $('#end_time').val(end_time);                
+                end_time = moment(end_test).format("hh:mm A");
+                $('#end_time').val(end_time);
+                                 
             }else{
+                eventDuration = 15;
                 end_time = moment(start_test).add(15,'minutes');
 
                 end_test = end_time.format("YYYY-MM-DD HH:mm:ss");
-                end_time = moment(end_time).format("HH:mm a");
-                $('#end_time').val(end_time);
+                end_time = moment(end_time).format("hh:mm A");
+                $('#end_time').val(end_time);                 
             }
             $('#service_search').val(category_name);
+            $('#salon_service_id').val(salon_service_id);
             $('#segession_box').append('');
-            $('#segession_box').hide();           
+            $('#segession_box').hide(); 
+            //console.log(salon_service_id);          
            
         });
 
@@ -430,7 +487,9 @@
                 block = 1;
                 $('#block').val(1);
                 $('#end_time').prop("disabled", false);
-                $('#service_info, #stylist_info, #cust_info, #notes_info').hide();   
+                $('#service_info, #cust_info, #notes_info').hide();
+                $('#myModalLabel').text('Block Booking');
+                $('#myInfoLabel').text('Block Information');
             }
             else if ($(this).attr('data-toggled') == 'on'){                
                    $(this).text('Block');
@@ -439,10 +498,68 @@
                    $(this).attr('data-toggled','off');
                    $('#end_time').prop("disabled", true);
                    $('#service_info, #stylist_info, #cust_info, #notes_info').show();   
+                   $('#myModalLabel').text('New Booking');
+                   $('#myInfoLabel').text('Appointment Information');
             }
         });
+
+        $(document).on('click', '.addEventBtn', function(){            
+            $('#event_form')[0].reset();     
+            var currentDate = $('#calendar').fullCalendar('getDate');            
+            date = moment(currentDate,"DD-MM-YYYY").format("DD-MM-YYYY");
+            $('#datepicker').val(date);
+
+            is_button = 1;
+            $('#myModal').modal(); 
+            $('#start_time').prop("disabled", false);
+            $('#selectStaff').css({'display':'block'});
+            $('#stylist').css({'display':'none'});
+            $('#selectStaff').html('');
+            $.ajax({
+                type: "GET",
+                url: 'http://'+base_url+'/calendar/getStaffResources?access_token='+access_token,                       
+                success: function(data){  
+                    $('#selectStaff').append('<option value="0">Select Staff</option>');
+                    $.each(data, function(i,row){                        
+                        var staff_list = '<option value="'+row.id+'">'+row.title+'</option>';
+                        $('#selectStaff').append(staff_list);
+                    });
+                }
+            });
+
+        });
+
+        $('#selectStaff').on('change', function() {
+            staff_id =  this.value;
+        });
+
+        var start_time_val;
+        var end_time_val;
+
+        $('#start_time').on('changeTime', function(){
+            var date = $('#datepicker').val();
+            date = moment(date,"DD-MM-YYYY").format("YYYY-MM-DD");
+
+            var start = $(this).val();
+            start = moment(start, ["h:mm A"]).format("HH:mm:ss");
+            start_time_val = start;
+            end = moment.duration(start).add(eventDuration,'minutes');
+            var hours = Math.floor(end.asHours());
+            var mins = Math.floor(end.asMinutes()) - hours * 60;
+            end_time_val = hours+':'+mins+':'+'00';          
+            end =  moment(end_time_val,'HH:mm').format("h:mm A");
+            $('#end_time').val(end);           
+            block = 0;
+            //console.log(start_test);
+            var local_start   = date+' '+start_time_val;
+            var local_end     = date+' '+end_time_val;  
+
+            start_test  = local_start;
+            end_test    = local_end;          
+
+        }); 
 		
-	});
+	});  
 
 </script>
 <style>
@@ -500,10 +617,22 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
 .fc-unthemed .fc-today {
     background: white;
 }
+.no-js #loader { display: none;  }
+.js #loader { display: block; position: absolute; left: 100px; top: 0; }
+.se-pre-con {
+  position: fixed;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: url(screen.png) center no-repeat #fff;
+}
 
 </style>
 </head>
 <body>
+  <!-- <div class="se-pre-con"></div> -->
 
 	<div id='calendar'></div>
 	
@@ -521,8 +650,9 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
                     <fieldset>
                         <input type="hidden" name="event_id" id="event_id">
                         <input type="hidden" name="block" value="0" id="block">
+                        <input type="hidden" name="salon_service_id" id="salon_service_id">
                         <legend>
-                            Appointment Information
+                            <span id="myInfoLabel">Appointment Information</span>                            
                             <div id="block_btn" class="pull-right">
                                 <button id="blockBtn" class="btn btn-success">Block</button>
                             </div>
@@ -550,9 +680,10 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
                         </div>
                         <br><br>
                         <div id="stylist_info" class="form-group" style="display: inline-flex;">
-                            <label>Stylist</label>
-                            <!-- <input class="form-control" id="stylist" type="text"> -->
+                            <label>Stylist</label>                           
                             <span id="stylist" style="margin-left: 5px;"></span>
+                            <select style="display: none;" class="form-control" name="repeat" id="selectStaff">                                                            
+                            </select>
                         </div>
                         <div id="notes_info" class="form-group pull-right">
                             <label for="inputPassword">Notes</label>

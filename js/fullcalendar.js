@@ -13093,7 +13093,9 @@ var agendaTimeGridMethods = {
 				'</th>';
 		}
 		else {
-			return '<th class="fc-axis ' + view.widgetHeaderClass + '" ' + view.axisStyleAttr() + '></th>';
+			return '<th class="fc-axis ' + view.widgetHeaderClass + '" ' + view.axisStyleAttr() + '>'+
+						'<button style="height:2.0em;" class="addEventBtn">Add</button>'+
+					'</th>';
 		}
 	},
 
