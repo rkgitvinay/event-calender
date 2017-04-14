@@ -13,7 +13,7 @@
 
 <script src='js/moment.min.js'></script>
 <script src='js/jquery.min.js'></script>
-<script src='js/fullcalendar.js'></script>
+<script src='js/fullcalendar.min.js'></script>
 <script src='js/scheduler.min.js'></script>
 <script src='js/bootstrap.min.js'></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -30,11 +30,6 @@
 
 
 <script type="text/javascript">
-
-    $(window).on('load',function() {    
-      $(".se-pre-con").delay(3000).fadeOut("slow");
-    });
-
 
     function  moveToScreenTwo(test) {
         Android.moveToNextScreen(test);
@@ -55,7 +50,9 @@
             var is_button = 0; 
 		        //var base_url = 'localhost:3000';
             var base_url = 'zalonstyle.in:8080';
-            var days;
+            var days;  
+            var day_end_time = null;   
+            var day_start_time = null;       
 	          var access_token = location.search.split('access_token=')[1];
             var current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss'); 
             $(document).ready(function(){                   
@@ -63,11 +60,11 @@
                     type: "GET",
                     url: 'http://'+base_url+'/calendar/salonSchedule',
                     data:'access_token='+access_token,       
-                    success: function(data){                 
-                        days = data;
+                    success: function(data){                          
+                        days = data.days;                       
                     }
                 });            
-            });
+            });          
 
 		    $('#calendar').fullCalendar({
       			defaultView: 'agendaDay',			
@@ -84,13 +81,18 @@
       				left: 'prev',
       				center: 'title',
       				right: 'next'
-      			},
+      			},            
+            titleFormat : 'ddd, MMM DD',            
             scrollTime: ''+n+':00:00',                        
       			resources: 'http://'+base_url+'/calendar/getStaffResources?access_token='+access_token,
       			events: 'http://'+base_url+'/calendar/getStaffEvents?access_token='+access_token+'',
-      			eventRender: function(event, element) { 
-                    element.find('.fc-title').append("<br/>" + event.description);
-                    element.find('.fc-title').append("<br/>" + event.notes);
+      			eventRender: function(event, element) {
+                    if(event.className == 'fc-nonbusiness'){
+                      day_end_time = event.end.format("YYYY-MM-DD HH:mm:ss"); 
+                      day_start_time = event.start.format("YYYY-MM-DD HH:mm:ss"); 
+                    }
+                    element.find('.fc-title').append("<br/><div class='e_cust'>"+event.description+"</div>");
+                    element.find('.fc-title').append("<br/><div class='e_note'>" + event.notes+"</div>");
                     $(element).addTouch();                 
                         element.bind( 'click', function( event ) {
                             var doubleClickOpportunity = 300, 
@@ -181,7 +183,7 @@
                                                 }                           
                                           });
                                       }else{                           
-                                        console.log(billing_data);  
+                                        //console.log(billing_data);  
                                       }
                                   }); 
                                 } 
@@ -195,7 +197,7 @@
                                   var btn = '<button id="noShowBtn" data-event_id="'+event.id+'" data-editable="true" data-color="#6BA5C2">Show</button>';
                                 }                            
                                 swal({
-                                  title: "Are you sure?",
+                                  title: "Choose your option",
                                   text: btn,                            
                                   type: "warning",
                                   showCancelButton: true,
@@ -211,7 +213,7 @@
                                        data: 'access_token='+access_token+'&id='+ event.id,
                                        type: "GET",
                                        success: function(json){
-                                            console.log(json);
+                                            //console.log(json);
                                            $('#calendar').fullCalendar('removeEvents',event.id);
                                        }
                                     });
@@ -250,42 +252,51 @@
                         });               
                 },
        			//select: function(start, end, allDay, event, resourceId){
-              dayClick: function(start, jsEvent, view, resourceId) {                    
+              dayClick: function(start, jsEvent, view, resourceId) {   
+                
                     is_button = 0;
                     $('#event_form')[0].reset();
                     current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss'); 
-                    var check = start.format('YYYY-MM-DD HH:mm:ss');       
-                    var index = days.indexOf(moment(check).day());
-                    if(index == -1){
-                       swal("Failed", "Appointment is closed for this day"); 
-                    }else if(check < current_time){
-                        swal("Failed", "Appointment is closed for this previous dates"); 
+                    var check = start.format('YYYY-MM-DD HH:mm:ss');
+                    var test = moment(check).day();
+                    if(test == 0){
+                      test = 7;
+                    }
+                    var index = days.indexOf(test);
+                    if(index == -1){                       
+                       swal({
+                          title: "Failed!",
+                          text: "Appointment is closed for this day",
+                          animation: false                          
+                        });
+                    }else if(check < current_time || check >= day_end_time || check < day_start_time){                        
+                        swal({
+                          title: "Failed!",
+                          text: "Appointment is not allowed for this time",
+                          animation: false
+                        });
                     }else{
                         $('#block_btn').show();                
-                        $('#block_btn button').text('Block');
+                        $('#block_btn button').text('Block Time Slot >');
                         block = 0;               
                         $('#service_info, #stylist_info, #cust_info, #notes_info').show();
             			      var date = 	start.format("DD-MM-YYYY");	
                         start_time = start.format("hh:mm A"); 	
-                        //end_time = end.format("hh:mm A");
+                        
                 				start_test = start.format("YYYY-MM-DD HH:mm:ss");
-                				//end_test = end.format("YYYY-MM-DD HH:mm:ss");
+                				
                         staff_id = resourceId.id;                
                         $('#datepicker').val(date);
                         $('#start_time').val(start_time);
                         //$('#end_time').val(end_time);
                         $('#stylist').text(resourceId.title);
+                        $('#stylist_id').val(staff_id);
                         $('#addEventBtn').removeClass('hidden');
-                        $('#updateEventBtn').addClass('hidden');
-          			    $('#myModal').modal('show');
+                        $('#updateEventBtn').addClass('hidden'); 
+                        $("#calendar").addClass("blur");                       
+          			        $('#myModal').modal('show');
                     }                                
-          		  },
-                // dayClick: function(date, jsEvent, view, resourceObj) {
-
-                //     alert('Date: ' + date.format('YYYY-MM-DD HH:mm:ss'));
-                //     alert('Resource ID: ' + resourceObj.id);
-
-                // },
+          		  },               
                 eventDurationEditable:false,
                 eventStartEditable : false,                      
                 eventDrop: function( event, delta, revertFunc, jsEvent, ui, view ) {
@@ -330,13 +341,18 @@
         }, 30000);
         
         
-        $('#myModal').on('hidden.bs.modal', function () {            
+        $('#myModal').on('hidden.bs.modal', function () { 
+            $("#calendar").removeClass("blur");           
             $('#event_form')[0].reset();  
             $('#service_search').val('');
             $('#segession_box').hide(); 
             $('#stylist').css({'display':'block'}); 
             $('#selectStaff').css({'display':'none'});           
         });
+
+        // $('#myModal').on('shown.bs.modal', function() { 
+        //     $("#calendar").addClass("blur");
+        // });
 
 		$("#datepicker" ).datepicker({ 
             dateFormat: 'dd-mm-yy',
@@ -360,6 +376,7 @@
         });  
 
         $('#addEventBtn').on('click', function(){ 
+            $("#addEventBtn").attr("disabled", true);
             if(is_button == 0){
                 start_new = moment(start_test).add('days', duration).format('YYYY-MM-DD HH:mm:ss');
                 end_new = moment(end_test).add('days', duration).format('YYYY-MM-DD HH:mm:ss');  
@@ -393,6 +410,9 @@
                             $('#myModal').modal('hide');                         
                             swal("Failed", "You can not create event");
                         }                      
+                    },
+                    complete:function(){
+                      $("#addEventBtn").attr("disabled", false);
                     }
                 });
               }              
@@ -400,11 +420,12 @@
 
         $(document).on('keyup', '#service_search',function(){
             var key = $(this).val();
+            var staff_id = parseInt($('#stylist_id').val());
             if(key.length > 0){
                 $.ajax({
                     type: "GET",
                     url: 'http://'+base_url+'/calendar/searchService',
-                    data:'access_token='+access_token+'&keyword='+$(this).val(),       
+                    data:'access_token='+access_token+'&staff_id='+staff_id+'&keyword='+$(this).val(),       
                     success: function(data){  
                         $('#segession_box').show();
                         $('#segession_box ul').empty();                                  
@@ -482,23 +503,27 @@
         $(document).on('click', '#blockBtn', function(e){
             e.preventDefault();
             if (!$(this).attr('data-toggled') || $(this).attr('data-toggled') == 'off'){
-                $(this).text('Unblock');
+                $(this).text('Book Appointment >');
                 $(this).attr('data-toggled','on');
+                $(this).removeClass('btn-danger');
+                $(this).addClass('btn-success');
                 block = 1;
                 $('#block').val(1);
                 $('#end_time').prop("disabled", false);
                 $('#service_info, #cust_info, #notes_info').hide();
-                $('#myModalLabel').text('Block Booking');
+                $('#myModalLabel').text('Block Time Slot');
                 $('#myInfoLabel').text('Block Information');
             }
             else if ($(this).attr('data-toggled') == 'on'){                
-                   $(this).text('Block');
+                   $(this).text('Block Time Slot >');
+                   $(this).addClass('btn-danger');
+                   $(this).removeClass('btn-success');
                    $('#block').val(0);
                    block = 0;
                    $(this).attr('data-toggled','off');
                    $('#end_time').prop("disabled", true);
                    $('#service_info, #stylist_info, #cust_info, #notes_info').show();   
-                   $('#myModalLabel').text('New Booking');
+                   $('#myModalLabel').text('Book Appointment');
                    $('#myInfoLabel').text('Appointment Information');
             }
         });
@@ -570,7 +595,16 @@
 		font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
 		font-size: 14px;
 	}
-
+  .modal-header .close {
+      margin-top: 2px !important;
+  }
+  .fc-axis.fc-time.fc-widget-content{
+    color:   #118ac2 ;
+    font-weight: bold; 
+  }
+  .fc-center{
+    color: #118ac2;
+  }
 	#calendar {
 		/*max-width: 900px;
 		margin: 50px auto;*/
@@ -579,34 +613,50 @@
     display: none;
   }
 	.modal-dialog {
-	z-index:50000;
-}
+  	z-index:50000;
+  }
 
 .modal-backdrop.fade {
-opacity: 0.1;
-filter: alpha(opacity=0.1);
+  opacity: 0.1;
+  filter: alpha(opacity=0.1);
 }
 
 .modal-content {
-position: relative;
-background-color: #FFF;
-border: 1px solid #CECECE;
-border-radius: 0px;
--webkit-box-shadow:none; 
- box-shadow: none;
-background-clip: padding-box;
-outline: 0;
-}
+  position: relative;
+  background-color: #FFF;
+  border: 1px solid #CECECE;
+  border-radius: 0px;
+  -webkit-box-shadow:none; 
+  box-shadow: none;
+  background-clip: padding-box;
+  outline: 0;
+  }
 
 
 .modal-header {
-    padding: 11px 15px;
+    padding: 3px 15px;
 	background-color: #F8F8F8;
 background: -webkit-linear-gradient(top, #F8F8F8, #F2F2F2);
 background: -moz-linear-gradient(top, #f8f8f8, #f2f2f2);
 background: -ms-linear-gradient(top, #f8f8f8, #f2f2f2);
 background: -o-linear-gradient(top, #f8f8f8, #f2f2f2);
 background: linear-gradient(top, #f8f8f8, #f2f2f2);
+}
+.modal-body{
+  position: relative !important; 
+  padding: 5px 17px !important;
+}
+#blockBtn{
+  padding: 5px 9px !important;
+}
+/*legend{
+  margin-bottom: 7px !important;
+}*/
+.modal-footer{
+  padding: 8px 19px !important;
+}
+.form-control{
+  height: 31px !important;
 }
 .closeon{
     color: yellow;position: absolute;right: 3px;
@@ -628,37 +678,58 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
   z-index: 9999;
   background: url(screen.png) center no-repeat #fff;
 }
-
+.blur{
+   -webkit-filter: blur(20px);
+    -moz-filter: blur(20px);
+    filter: blur(7px);
+}
+.iosBtn{
+  border: solid;
+  border-color:  #122af3;
+  color:  #122af3 ;
+  padding: 3px 12px;
+  border-width: 2px;
+  /*font-weight: bold;*/
+}
+.fc-title{
+  font-weight: bold;
+  color: black;
+}
+.e_cust{
+  color: white;
+}
+.e_note{
+  font-weight: normal;
+}
 </style>
 </head>
 <body>
   <!-- <div class="se-pre-con"></div> -->
 
-	<div id='calendar'></div>
+	<div id="calendar"></div>
 	
 
 <!-- Modal -->
-<div class="modal fade bs-example-modal-lg" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade bs-example-modal-lg" data-backdrop="static" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-        <h4 class="modal-title" id="myModalLabel">New Booking</h4>
+        <h4 class="modal-title" id="myModalLabel">Book Appointment</h4>
       </div>
       <div class="modal-body">       		
        		   <form class="form-inline" id="event_form">
                     <fieldset>
                         <input type="hidden" name="event_id" id="event_id">
                         <input type="hidden" name="block" value="0" id="block">
-                        <input type="hidden" name="salon_service_id" id="salon_service_id">
-                        <legend>
-                            <span id="myInfoLabel">Appointment Information</span>                            
-                            <div id="block_btn" class="pull-right">
-                                <button id="blockBtn" class="btn btn-success">Block</button>
-                            </div>
-                        </legend>
+                        <input type="hidden" name="salon_service_id" id="salon_service_id">                                                                         
+                        <div id="block_btn" class="form-group pull-right">
+                            <button id="blockBtn" class="btn btn-danger">Block Time Slot</button>
+                        </div>
+                       <br><br>
+
                         <div class="form-group">
-                            <label>Date</label>
+                            <label>Date</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             <input autocomplete="off" class="form-control" id="datepicker" type="text">
                         </div>
                         <div id="service_info" class="form-group pull-right">
@@ -671,16 +742,17 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
                         </div>
                         <br><br>
                          <div class="form-group">
-                            <label>Time</label>
+                            <label> Start Time</label>
                             <input autocomplete="off" class="form-control" id="start_time" type="text" disabled>
                         </div>
                         <div class="form-group pull-right">
-                            <label for="inputPassword">Time</label>
+                            <label for="inputPassword">End Time</label>
                             <input autocomplete="off" class="form-control" id="end_time" type="text" disabled>
                         </div>
                         <br><br>
                         <div id="stylist_info" class="form-group" style="display: inline-flex;">
-                            <label>Stylist</label>                           
+                            <label>Stylist</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                            <input type="hidden" id="stylist_id">                          
                             <span id="stylist" style="margin-left: 5px;"></span>
                             <select style="display: none;" class="form-control" name="repeat" id="selectStaff">                                                            
                             </select>
@@ -690,7 +762,7 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
                             <input autocomplete="off" id="eventNotes" class="form-control" id="notes" type="text">
                         </div>
                         <br><br>                        
-                        <label>Repeat</label>
+                        <label>Repeat</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         <select class="form-control" name="repeat" id="repeat">
                           <option value="0">No Repeat</option>
                           <option value="1">1 week</option>
@@ -704,9 +776,9 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
                     <br>
 
                     <fieldset id="cust_info">
-                        <legend>Customer Information</legend>
+                        <!-- <legend>Customer Information</legend> -->
                         <div class="form-group">
-                            <label>Mobile</label>
+                            <label>Mobile</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             <input maxlength="10" autocomplete="off" class="form-control" id="cust_mobile" type="text">
                         </div>
                          <div class="well" id="segession_cust" style="margin-left: 52px; position: absolute; width: 30%;display: none;">
@@ -722,9 +794,9 @@ background: linear-gradient(top, #f8f8f8, #f2f2f2);
 
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" id="addEventBtn" class="btn btn-primary">Save changes</button>
-        <button type="button" id="updateEventBtn" class="btn btn-primary hidden">Update Event</button>
+        <button type="button" class="btn btn-default iosBtn" data-dismiss="modal">Close</button>
+        <button type="button" id="addEventBtn" class="btn btn-default iosBtn">Save changes</button>
+        <button type="button" id="updateEventBtn" class="btn btn-default hidden iosBtn">Update Event</button>
       </div>
     </div>
   </div>

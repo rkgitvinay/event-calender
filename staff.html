@@ -13,7 +13,7 @@
 
 <script src='js/moment.min.js'></script>
 <script src='js/jquery.min.js'></script>
-<script src='js/fullcalendar.min.js'></script>
+<script src='js/fullcalendar.js'></script>
 <script src='js/scheduler.min.js'></script>
 <script src='js/bootstrap.min.js'></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -44,7 +44,7 @@
             var end_test;
             var end_time;        
 		    //var base_url = 'localhost:3000';
-            var base_url = 'zalonstyle.in:8080';
+            var base_url = '52.33.37.151:8080';
             var days;
 	        var access_token = location.search.split('access_token=')[1];
             var current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss'); 
@@ -56,9 +56,10 @@
       			allDaySlot:false,
             eventOverlap :false,
             eventStartEditable:false,
+            eventDurationEditable:false,
       			minTime: '08:00:00',
             maxTime:'22:00:00',
-      			slotDuration: '00:30:00',
+      			slotDuration: '00:15:00',
       			aspectRatio: 2, 
             columnFormat:'ddd',
             titleFormat:'MMM D',           
@@ -76,7 +77,9 @@
             },
           	scrollTime: ''+n+':00:00',                              			
       			events: 'http://'+base_url+'/calendar/getMyEvents?access_token='+access_token+'',
-                eventRender: function(event, element) {                     
+                eventRender: function(event, element) {
+                    element.find('.fc-title').append("<br/><div class='e_cust'>"+event.description+"</div>");
+                    element.find('.fc-title').append("<br/><div class='e_note'>" + event.notes+"</div>");                     
                     $(element).addTouch();                 
                         element.bind( 'click', function( event ) {
                             var doubleClickOpportunity = 300, 
@@ -115,7 +118,7 @@
                                 function(){
                                     $.ajax({
                                        url: 'http://'+base_url+'/calendar/removeEvent',
-                                       data: 'access_token='+access_token+'&id='+ event.id,
+                                       data: 'staff_token='+access_token+'&id='+ event.id,
                                        type: "GET",
                                        success: function(json){
                                             console.log(json);
@@ -157,15 +160,17 @@
                         });               
                 },                
                 dayClick: function(date, jsEvent, view) {
-                    prevTime = typeof currentTime === 'undefined' || currentTime === null
-                        ? new Date().getTime() - 1000000 : currentTime;
-                    currentTime = new Date().getTime();
-                    if (currentTime - prevTime < 500){                      
-                        start = moment(date).format("YYYY-MM-DD HH:mm:ss");
-                        bookAppointment(start);
-                    }
+                    var current_time = moment(new Date()).format('YYYY-MM-DD HH:mm:ss'); 
+                    var start = date.format('YYYY-MM-DD HH:mm:ss');       
+                    if(start < current_time){
+                      swal("Failed", "Appointment is closed for previous time");
+                    }else{
+                      var start_time = moment(start).format("MMMM DD YYYY hh:mm A");
+                      //bookAppointment(start_time);
+                      console.log(start_time);
+                    }                                            
                 },
-                eventDurationEditable:false,                                            
+                //eventDurationEditable:false,                                            
     		});
 
             window.setInterval(function(){
@@ -269,10 +274,10 @@
         }
     });
 
-  $(window).on('load', function() {   
-    $(".se-pre-con").fadeOut("slow");;
-    //alert('hello');
-  });
+  // $(window).on('load', function() {   
+  //   $(".se-pre-con").fadeOut("slow");;
+    
+  // });
 
 </script>
 <style>
@@ -285,7 +290,7 @@
     position: fixed;
 	}
   .fc-event{
-    right: -8px !important;
+    /*right: -8px !important;*/
   }
   .fc-toolbar{
     padding: 8px !important;
@@ -316,11 +321,20 @@
   z-index: 9999;
   background: url(Preloader_4.gif) center no-repeat #fff;
 }
-
+.fc-title{
+  font-weight: bold;
+  color: black;
+}
+.e_cust{
+  color: white;
+}
+.e_note{
+  font-weight: normal;
+}
 </style>
 </head>
 <body>
-  <div class="se-pre-con"></div>
+  <!-- <div class="se-pre-con"></div> -->
 	<div id='calendar'></div>
 	
 
